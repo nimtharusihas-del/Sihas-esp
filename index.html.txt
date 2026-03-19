@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sihas ESP | ESP32 Developer & IoT Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00D9FF',
+                        secondary: '#7000FF',
+                        dark: '#0a0a0f',
+                        darker: '#050508',
+                        card: '#12121a',
+                        'card-hover': '#1a1a25'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'gradient': 'gradient 15s ease infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        'pulse-glow': {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: .5 },
+                        },
+                        gradient: {
+                            '0%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                            '100%': { backgroundPosition: '0% 50%' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-dark {
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 217, 255, 0.1);
+        }
+        
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5),
+                         0 0 20px rgba(0, 217, 255, 0.3),
+                         0 0 30px rgba(0, 217, 255, 0.1);
+        }
+        
+        .neon-border {
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3),
+                        inset 0 0 10px rgba(0, 217, 255, 0.1);
+        }
+        
+        .grid-pattern {
+            background-image: radial-gradient(circle at 1px 1px, rgba(0, 217, 255, 0.15) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(0, 217, 255, 0.5);
+            border-radius: 50%;
+;
+            pointer-events: none;
+        }
+        
+        .project-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .project-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 217, 255, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00D9FF 0%, #7000FF 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.4);
+        }
+        
+        .floating-btn {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .modal-enter {
+            animation: modalEnter 0.3s ease-out;
+        }
+        
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #00D9FF;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7000FF;
+        }
+        
+        .light-mode {
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .light-mode .glass-dark {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .light-mode .card {
+            background: white;
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-dark text-white min-h-screen transition-colors duration-300">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-dark border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2 cursor-pointer" onclick="showPage('home')">
+                    <i class="fas fa-microchip text-primary text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight">Sihas<span class="text-primary">ESP</span></span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <button onclick="showPage('home')" class="nav-link hover:text-primary transition-colors">Home</button>
+                    <button onclick="showPage('projects')" class="nav-link hover:text-primary transition-colors">Projects</button>
+                    <button onclick="openAddProjectModal()" class="nav-link hover:text-primary transition-colors">Add Project</button>
+                    <button onclick="showPage('contact')" class="nav-link hover:text-primary transition-colors">Contact</button>
+                    <button onclick="showPage('videos')" class="nav-link hover:text-primary transition-colors">Videos</button>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-white/10 transition-colors">
+                        <i id="theme-icon" class="fas fa-sun text-primary"></i>
+                    </button>
+                    <button class="md:hidden p-2" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass-dark border-t border-white/10">
+            <div class="px-4 pt-2 pb-4 space-y-2">
+                <button onclick="showPage('home')" class="block w-full text-left py-2 hover:text-primary">Home</button>
+                <button onclick="showPage('projects')" class="block w-full text-left py-2 hover:text-primary">Projects</button>
+                <button onclick="openAddProjectModal()" class="block w-full text-left py-2 hover:text-primary">Add Project</button>
+                <button onclick="showPage('contact')" class="block w-full text-left py-2 hover:text-primary">Contact</button>
+                <button onclick="showPage('videos')" class="block w-full text-left py-2 hover:text-primary">Videos</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-16">
+        <!-- Home Page -->
+        <section id="home-page" class="page-section min-h-screen relative overflow-hidden">
+            <div class="absolute inset-0 grid-pattern opacity-30"></div>
+            <div id="particles-container" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
+            
+            <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-screen flex items-center">
+                <div class="grid lg:grid-cols-2 gap-12 items-center w-full">
+                    <div class="slide-in">
+                        <div class="inline-flex items-center px-4 py-2 rounded-full glass mb-6 border border-primary/30">
+                            <span class="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse"></span>
+                            <span class="text-sm text-primary font-medium">ESP32 Developer & IoT Creator</span>
+                        </div>
+                        <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                            Sihas <span class="text-primary neon-text">ESP</span>
+                        </h1>
+                        <p class="text-xl text-gray-400 mb-8 max-w-lg">
+                            Building the future with ESP32. Explore innovative IoT projects, from smart home automation to robotics.
+                        </p>
+                        <div class="flex flex-wrap gap-4">
+                            <button onclick="showPage('projects')" class="btn-primary px-8 py-4 rounded-full font-semibold flex items-center gap-2">
+                                <span>View Projects</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                            <button onclick="showPage('contact')" class="px-8 py-4 rounded-full border border-white/20 hover:border-primary hover:text-primary transition-all font-semibold">
+                                Contact Me
+                            </button>
+                        </div>
+                        
+                        <div class="mt-12 flex items-center gap-8 text-gray-400">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-wifi text-primary"></i>
+                                <span>IoT Solutions</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-robot text-primary"></i>
+                                <span>Robotics</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-bolt text-primary"></i>
+                                <span>Automation</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="hidden lg:block relative">
+                        <div class="relative w-full h-96">
+                            <div class="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-3xl"></div>
+                            <div class="relative glass rounded-3xl p-8 h-full flex items-center justify-center border border-white/10 floating-btn">
+                                <div class="text-center">
+                                    <i class="fas fa-microchip text-8xl text-primary mb-4 animate-pulse"></i>
+                                    <div class="grid grid-cols-3 gap-4 mt-8">
+                                        <div class="glass rounded-xl p-4 border border-primary/20">
+                                            <i class="fas fa-code text-primary text-2xl mb-2"></i>
+                                            <p class="text-xs text-gray-400">Embedded C</p>
+                                        </div>
+                                        <div class="glass rounded-xl p-4 border border-primary/20">
+                                            <i class="fas fa-wifi text-primary text-2xl mb-2"></i>
+                                            <p class="text-xs text-gray-400">WiFi/BLE</p>
+                                        </div>
+                                        <div class="glass rounded-xl p-4 border border-primary/20">
+                                            <i class="fas fa-mobile-alt text-primary text-2xl mb-2"></i>
+                                            <p class="text-xs text-gray-400">Mobile App</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                <i class="fas fa-chevron-down text-primary text-2xl"></i>
+            </div>
+        </section>
+
+        <!-- Projects Page -->
+        <section id="projects-page" class="page-section hidden min-h-screen py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">My <span class="text-primary">Projects</span></h2>
+                    <p class="text-gray-400 max-w-2xl mx-auto">Explore my collection of ESP32 and IoT projects. Each project includes source code, circuit diagrams, and video tutorials.</p>
+                </div>
+                
+                <!-- Search and Filter -->
+                <div class="glass rounded-2xl p-6 mb-8 border border-white/10">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1 relative">
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="search-input" placeholder="Search projects..." 
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none transition-colors"
+                                oninput="filterProjects()">
+                        </div>
+                        <select id="filter-select" onchange="filterProjects()" 
+                            class="px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none">
+                            <option value="all">All Projects</option>
+                            <option value="recent">Recent First</option>
+                            <option value="oldest">Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Projects Grid -->
+                <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Projects will be dynamically loaded here -->
+                </div>
+                
+                <div id="no-projects" class="hidden text-center py-20">
+                    <i class="fas fa-folder-open text-6xl text-gray-600 mb-4"></i>
+                    <p class="text-xl text-gray-400">No projects found. Add your first project!</p>
+                    <button onclick="openAddProjectModal()" class="mt-4 btn-primary px-6 py-3 rounded-full">
+                        <i class="fas fa-plus mr-2"></i>Add Project
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Project Details Page -->
+        <section id="project-details-page" class="page-section hidden min-h-screen py-20">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <button onclick="showPage('projects')" class="mb-6 flex items-center gap-2 text-gray-400 hover:text-primary transition-colors">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Projects</span>
+                </button>
+                
+                <div id="project-details-content">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Videos Page -->
+        <section id="videos-page" class="page-section hidden min-h-screen py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Video <span class="text-primary">Tutorials</span></h2>
+                    <p class="text-gray-400 max-w-2xl mx-auto">Watch and download video tutorials from JustDoElectronics</p>
+                </div>
+                
+                <div class="glass rounded-2xl p-8 border border-white/10 mb-8">
+                    <div class="flex flex-col lg:flex-row gap-8 items-center">
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold mb-4">JustDoElectronics Video Library</h3>
+                            <p class="text-gray-400 mb-6">
+                                Access comprehensive video tutorials covering ESP32 programming, circuit design, and IoT implementations. 
+                                All videos are available for online streaming and download.
+                            </p>
+                            <a href="https://justdoelectronics.com/" target="_blank" 
+                                class="btn-primary px-6 py-3 rounded-full inline-flex items-center gap-2">
+                                <span>Visit Website</span>
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                        <div class="lg:w-1/3">
+                            <div class="glass rounded-xl p-6 border border-primary/20 text-center">
+                                <i class="fas fa-play-circle text-6xl text-primary mb-4"></i>
+                                <p class="text-sm text-gray-400">External Video Resource</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="video-grid">
+                    <!-- Sample video cards -->
+                    <div class="glass rounded-xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all cursor-pointer group">
+                        <div class="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
+                            <i class="fas fa-play text-4xl text-white opacity-80 group-hover:scale-110 transition-transform"></i>
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors"></div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-semibold mb-2">ESP32 Getting Started Guide</h4>
+                            <p class="text-sm text-gray-400">Complete beginner tutorial for ESP32 setup and first sketch.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all cursor-pointer group">
+                        <div class="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
+                            <i class="fas fa-play text-4xl text-white opacity-80 group-hover:scale-110 transition-transform"></i>
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors"></div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-semibold mb-2">WiFi Manager Tutorial</h4>
+                            <p class="text-sm text-gray-400">Learn how to manage WiFi connections dynamically on ESP32.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all cursor-pointer group">
+                        <div class="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
+                            <i class="fas fa-play text-4xl text-white opacity-80 group-hover:scale-110 transition-transform"></i>
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors"></div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-semibold mb-2">BLE Communication</h4>
+                            <p class="text-sm text-gray-400">Bluetooth Low Energy implementation on ESP32 with mobile apps.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Page -->
+        <section id="contact-page" class="page-section hidden min-h-screen py-20">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Get in <span class="text-primary">Touch</span></h2>
+                    <p class="text-gray-400">Have a question or want to collaborate? Reach out!</p>
+                </div>
+                
+                <div class="glass rounded-2xl p-8 border border-white/10">
+                    <form onsubmit="handleContactSubmit(event)" class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Name</label>
+                                <input type="text" required 
+                                    class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none transition-colors"
+                                    placeholder="Your name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Email</label>
+                                <input type="email" required 
+                                    class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none transition-colors"
+                                    placeholder="your@email.com">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Subject</label>
+                            <input type="text" required 
+                                class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none transition-colors"
+                                placeholder="Project inquiry">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Message</label>
+                            <textarea rows="5" required 
+                                class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none transition-colors resize-none"
+                                placeholder="Your message..."></textarea>
+                        </div>
+                        <button type="submit" class="w-full btn-primary py-4 rounded-xl font-semibold">
+                            <i class="fas fa-paper-plane mr-2"></i>Send Message
+                        </button>
+                    </form>
+                    
+                    <div class="mt-8 pt-8 border-t border-white/10 grid md:grid-cols-3 gap-6 text-center">
+                        <div>
+                            <i class="fas fa-envelope text-primary text-2xl mb-2"></i>
+                            <p class="text-sm text-gray-400">sihas@example.com</p>
+                        </div>
+                        <div>
+                            <i class="fab fa-youtube text-primary text-2xl mb-2"></i>
+                            <p class="text-sm text-gray-400">@SihasESP</p>
+                        </div>
+                        <div>
+                            <i class="fab fa-github text-primary text-2xl mb-2"></i>
+                            <p class="text-sm text-gray-400">@sihasesp</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Floating Add Button -->
+    <button onclick="openAddProjectModal()" 
+        class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-dark rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center z-40 floating-btn neon-border">
+        <i class="fas fa-plus text-xl"></i>
+    </button>
+
+    <!-- Add Project Modal -->
+    <div id="add-project-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAddProjectModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="glass-dark rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-enter border border-white/20">
+                <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                    <h3 class="text-2xl font-bold">Add New Project</h3>
+                    <button onclick="closeAddProjectModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form onsubmit="handleAddProject(event)" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Project Title *</label>
+                        <input type="text" name="title" required 
+                            class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none"
+                            placeholder="e.g., Smart Home Automation">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Description *</label>
+                        <textarea name="description" rows="3" required 
+                            class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none resize-none"
+                            placeholder="Describe your project..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">YouTube Video URL *</label>
+                        <input type="url" name="youtube" required 
+                            class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none"
+                            placeholder="https://youtube.com/watch?v=...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Thumbnail URL (optional)</label>
+                        <input type="url" name="thumbnail" 
+                            class="w-full px-4 py-3 rounded-xl bg-dark border border-white/10 focus:border-primary focus:outline-none"
+                            placeholder="https://example.com/image.jpg">
+                    </div>
+                    
+                    <div class="border-t border-white/10 pt-4">
+                        <label class="block text-sm font-medium mb-3">Downloadable Files</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">Source Code</label>
+                                <input type="file" name="file_code" accept=".ino,.cpp,.h,.zip" 
+                                    class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/20 file:text-primary hover:file:bg-primary/30">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">Circuit Diagram</label>
+                                <input type="file" name="file_diagram" accept=".pdf,.png,.jpg,.svg" 
+                                    class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/20 file:text-primary hover:file:bg-primary/30">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">App/APK</label>
+                                <input type="file" name="file_apk" accept=".apk,.ipa" 
+                                    class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/20 file:text-primary hover:file:bg-primary/30">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">Extra Files</label>
+                                <input type="file" name="file_extra" 
+                                    class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/20 file:text-primary hover:file:bg-primary/30">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 pt-4">
+                        <button type="button" onclick="closeAddProjectModal()" 
+                            class="flex-1 py-3 rounded-xl border border-white/20 hover:border-primary transition-colors">Cancel</button>
+                        <button type="submit" 
+                            class="flex-1 btn-primary py-3 rounded-xl font-semibold">Add Project</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-8 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-microchip text-primary"></i>
+                    <span class="font-semibold">Sihas ESP</span>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors text-2xl">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors text-2xl">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors text-2xl">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors text-2xl">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                </div>
+                <p class="text-gray-400 text-sm">© 2026 Sihas ESP. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize
+        let projects = [];
+        let currentProjectId = null;
+        
+        // Sample projects data
+        const sampleProjects = [
+            {
+                id: 1,
+                title: "Smart Home Automation",
+                description: "Complete home automation system using ESP32 with WiFi control. Features include light control, temperature monitoring, and security sensors accessible via mobile app.",
+                youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                thumbnail: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+                files: { code: "smart_home.ino", diagram: "circuit.pdf", apk: "controller.apk", extra: "readme.txt" },
+                date: "2026-03-15"
+            },
+            {
+                id: 2,
+                title: "WiFi Robot Car",
+                description: "Remote controlled robot car with ESP32-CAM for live video streaming. Controlled via web interface with directional controls and speed adjustment.",
+                youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                thumbnail: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400",
+                files: { code: "robot_car.ino", diagram: "wiring.png", apk: null, extra: "3d_models.zip" },
+                date: "2026-03-10"
+            },
+            {
+                id: 3,
+                title: "Weather Station",
+                description: "IoT weather monitoring station using ESP32 with DHT22, BMP180, and rain sensor. Data uploaded to ThingSpeak for real-time monitoring.",
+                youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                thumbnail: "https://images.unsplash.com/photo-1592210454359-9043f067919b?w=400",
+                files: { code: "weather.ino", diagram: "schematic.pdf", apk: null, extra: "datasheets.zip" },
+                date: "2026-03-05"
+            },
+            {
+                id: 4,
+                title: "ESP32 Security Camera",
+                description: "DIY security camera with motion detection and Telegram alerts. Features night vision mode and cloud storage integration.",
+                youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                thumbnail: "https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?w=400",
+                files: { code: "camera.ino", diagram: "layout.pdf", apk: "viewer.apk", extra: "stl_files.zip" },
+                date: "2026-02-28"
+            },
+            {
+                id: 5,
+                title: "Smart Plant Monitor",
+                description: "Automated plant watering system with soil moisture sensing. Mobile app shows soil status and allows manual watering control.",
+                youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                thumbnail: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
+                files: { code: "plant.ino", diagram: "circuit.png", apk: "plant_app.apk", extra: "guide.pdf" },
+                date: "2026-02-20"
+            },
+            {
+                id: 6,
+                title: "Bluetooth Audio Receiver",
+                description: "Turn any speaker into a Bluetooth speaker with ESP32. Supports A2DP protocol with high-quality audio streaming.",
+                youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                thumbnail: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400",
+                files: { code: "bluetooth_audio.ino", diagram: "connections.pdf", apk: null, extra: "parts_list.txt" },
+                date: "2026-02-15"
+            }
+        ];
+        
+        // Load projects from localStorage or use sample data
+        function loadProjects() {
+            const stored = localStorage.getItem('sihas_projects');
+            if (stored) {
+                projects = JSON.parse(stored);
+            } else {
+                projects = sampleProjects;
+                saveProjects();
+            }
+            renderProjects();
+        }
+        
+        function saveProjects() {
+            localStorage.setItem('sihas_projects', JSON.stringify(projects));
+        }
+        
+        // Navigation
+        function showPage(page) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected page
+            document.getElementById(page + '-page').classList.remove('hidden');
+            
+            // Update active nav
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('text-primary');
+            });
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+            
+            // Close mobile menu
+            document.getElementById('mobile-menu').classList.add('hidden');
+            
+            if (page === 'projects') {
+                renderProjects();
+            }
+        }
+        
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Theme Toggle
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const icon = document.getElementById('theme-icon');
+            if (document.body.classList.contains('light-mode')) {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                document.body.style.background = '#f8fafc';
+                document.body.style.color = '#1e293b';
+            } else {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                document.body.style.background = '#0a0a0f';
+                document.body.style.color = 'white';
+            }
+        }
+        
+        // Render Projects
+        function renderProjects(filteredProjects = null) {
+            const grid = document.getElementById('projects-grid');
+            const displayProjects = filteredProjects || projects;
+            
+            if (displayProjects.length === 0) {
+                grid.innerHTML = '';
+                document.getElementById('no-projects').classList.remove('hidden');
+                return;
+            }
+            
+            document.getElementById('no-projects').classList.add('hidden');
+            
+            grid.innerHTML = displayProjects.map((project, index) => `
+                <div class="project-card glass rounded-2xl overflow-hidden border border-white/10 cursor-pointer group" 
+                     onclick="showProjectDetails(${project.id})"
+                     style="animation: slideIn 0.5s ease-out ${index * 0.1}s both;">
+                    <div class="relative aspect-video overflow-hidden">
+                        <img src="${project.thumbnail || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400'}" 
+                             alt="${project.title}" 
+                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark to-transparent opacity-60"></div>
+                        <div class="absolute top-4 left-4">
+                            <span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30">
+                                Project #${String(project.id).padStart(2, '0')}
+                            </span>
+                        </div>
+                        <div class="absolute bottom-4 right-4">
+                            <button class="w-10 h-10 rounded-full bg-primary text-dark flex items-center justify-center hover:scale-110 transition-transform">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-1">${project.title}</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2 mb-4">${project.description}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span><i class="far fa-calendar mr-1"></i>${project.date}</span>
+                            <span class="flex items-center gap-1">
+                                <i class="fas fa-download text-primary"></i>
+                                ${Object.values(project.files).filter(f => f).length} files
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Filter Projects
+        function filterProjects() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const filter = document.getElementById('filter-select').value;
+            
+            let filtered = projects.filter(p => 
+                p.title.toLowerCase().includes(search) || 
+                p.description.toLowerCase().includes(search) ||
+                String(p.id).includes(search)
+            );
+            
+            if (filter === 'recent') {
+                filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+            } else if (filter === 'oldest') {
+                filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+            }
+            
+            renderProjects(filtered);
+        }
+        
+        // Project Details
+        function showProjectDetails(id) {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+            
+            currentProjectId = id;
+            const content = document.getElementById('project-details-content');
+            
+            // Convert YouTube URL to embed URL
+            let embedUrl = project.youtube;
+            if (embedUrl.includes('watch?v=')) {
+                embedUrl = embedUrl.replace('watch?v=', 'embed/');
+            } else if (embedUrl.includes('youtu.be/')) {
+                const videoId = embedUrl.split('youtu.be/')[1];
+                embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            }
+            
+            content.innerHTML = `
+                <div class="glass rounded-2xl overflow-hidden border border-white/10 mb-8">
+                    <div class="aspect-video relative">
+                        <iframe src="${embedUrl}" 
+                                class="w-full h-full absolute inset-0"
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+                
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <div class="glass rounded-2xl p-8 border border-white/10 mb-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-semibold border border-primary/30">
+                                    Project #${String(project.id).padStart(2, '0')}
+                                </span>
+                                <span class="text-gray-400 text-sm"><i class="far fa-calendar mr-2"></i>${project.date}</span>
+                            </div>
+                            <h1 class="text-3xl font-bold mb-4">${project.title}</h1>
+                            <p class="text-gray-300 leading-relaxed">${project.description}</p>
+                        </div>
+                        
+                        <div class="glass rounded-2xl p-8 border border-white/10">
+                            <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
+                                <i class="fas fa-download text-primary"></i>
+                                Download Resources
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                ${project.files.code ? `
+                                    <button onclick="downloadFile('${project.files.code}', 'code')" 
+                                        class="flex items-center gap-4 p-4 rounded-xl bg-dark border border-white/10 hover:border-primary hover:bg-primary/5 transition-all group">
+                                        <div class="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-code text-primary text-xl"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="font-semibold">Source Code</p>
+                                            <p class="text-xs text-gray-400">${project.files.code}</p>
+                                        </div>
+                                        <i class="fas fa-download ml-auto text-gray-400 group-hover:text-primary"></i>
+                                    </button>
+                                ` : ''}
+                                
+                                ${project.files.diagram ? `
+                                    <button onclick="downloadFile('${project.files.diagram}', 'diagram')" 
+                                        class="flex items-center gap-4 p-4 rounded-xl bg-dark border border-white/10 hover:border-primary hover:bg-primary/5 transition-all group">
+                                        <div class="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-project-diagram text-primary text-xl"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="font-semibold">Circuit Diagram</p>
+                                            <p class="text-xs text-gray-400">${project.files.diagram}</p>
+                                        </div>
+                                        <i class="fas fa-download ml-auto text-gray-400 group-hover:text-primary"></i>
+                                    </button>
+                                ` : ''}
+                                
+                                ${project.files.apk ? `
+                                    <button onclick="downloadFile('${project.files.apk}', 'apk')" 
+                                        class="flex items-center gap-4 p-4 rounded-xl bg-dark border border-white/10 hover:border-primary hover:bg-primary/5 transition-all group">
+                                        <div class="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-mobile-alt text-primary text-xl"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="font-semibold">Mobile App</p>
+                                            <p class="text-xs text-gray-400">${project.files.apk}</p>
+                                        </div>
+                                        <i class="fas fa-download ml-auto text-gray-400 group-hover:text-primary"></i>
+                                    </button>
+                                ` : ''}
+                                
+                                ${project.files.extra ? `
+                                    <button onclick="downloadFile('${project.files.extra}', 'extra')" 
+                                        class="flex items-center gap-4 p-4 rounded-xl bg-dark border border-white/10 hover:border-primary hover:bg-primary/5 transition-all group">
+                                        <div class="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-folder-open text-primary text-xl"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="font-semibold">Extra Files</p>
+                                            <p class="text-xs text-gray-400">${project.files.extra}</p>
+                                        </div>
+                                        <i class="fas fa-download ml-auto text-gray-400 group-hover:text-primary"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="glass rounded-2xl p-6 border border-white/10">
+                            <h4 class="font-bold mb-4">Project Stats</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Downloads</span>
+                                    <span class="font-semibold">1.2k</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Views</span>
+                                    <span class="font-semibold">5.8k</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Rating</span>
+                                    <span class="font-semibold text-yellow-400"><i class="fas fa-star mr-1"></i>4.9</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="glass rounded-2xl p-6 border border-white/10">
+                            <h4 class="font-bold mb-4">Technologies</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs border border-primary/20">ESP32</span>
+                                <span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs border border-primary/20">Arduino</span>
+                                <span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs border border-primary/20">IoT</span>
+                                <span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs border border-primary/20">WiFi</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="deleteProject(${project.id})" 
+                            class="w-full py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors">
+                            <i class="fas fa-trash mr-2"></i>Delete Project
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            showPage('project-details');
+        }
+        
+        // Download simulation
+        function downloadFile(filename, type) {
+            // Create a blob with dummy content
+            const content = `// ${filename}\n// Downloaded from Sihas ESP Portfolio\n// Type: ${type}\n\n// This is a simulated download for demonstration purposes.`;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Show notification
+            showNotification(`Downloading ${filename}...`);
+        }
+        
+        // Add Project Modal
+        function openAddProjectModal() {
+            document.getElementById('add-project-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeAddProjectModal() {
+            document.getElementById('add-project-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function handleAddProject(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            const newProject = {
+                id: projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1,
+                title: formData.get('title'),
+                description: formData.get('description'),
+                youtube: formData.get('youtube'),
+                thumbnail: formData.get('thumbnail') || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400',
+                date: new Date().toISOString().split('T')[0],
+                files: {
+                    code: formData.get('file_code')?.name || null,
+                    diagram: formData.get('file_diagram')?.name || null,
+                    apk: formData.get('file_apk')?.name || null,
+                    extra: formData.get('file_extra')?.name || null
+                }
+            };
+            
+            projects.unshift(newProject);
+            saveProjects();
+            closeAddProjectModal();
+            form.reset();
+            showNotification('Project added successfully!');
+            
+            if (!document.getElementById('projects-page').classList.contains('hidden')) {
+                renderProjects();
+            }
+        }
+        
+        function deleteProject(id) {
+            if (confirm('Are you sure you want to delete this project?')) {
+                projects = projects.filter(p => p.id !== id);
+                saveProjects();
+                showNotification('Project deleted successfully!');
+                showPage('projects');
+            }
+        }
+        
+        // Contact Form
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            showNotification('Message sent successfully! I will get back to you soon.');
+            e.target.reset();
+        }
+        
+        // Notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 glass-dark border border-primary/30 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce';
+            notification.innerHTML = `
+                <i class="fas fa-check-circle text-primary text-xl"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Particle Animation
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                
+                // Add floating animation
+                particle.style.animation = `float ${Math.random() * 10 + 5}s ease-in-out infinite`;
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProjects();
+            createParticles();
+            
+            // Close modal on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeAddProjectModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
